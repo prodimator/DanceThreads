@@ -15,6 +15,7 @@ randomDelay max = do
 	threadDelay (n*100000)
 
 data Leader = L Int (Map String Integer) deriving Show
+data Follower = F Int (Map String Integer) deriving Show
 data LeaderPostOffice = LPO [(MVar Int, MVar String)]
 data FollowerPostOffice = FPO [(MVar Int, MVar Bool)]
 
@@ -26,10 +27,29 @@ emptyDance = "------"
 createLeader:: Int -> [(String, Integer)] -> Leader
 createLeader id mapList = L id (Map.fromList mapList)
 
+createFollower:: Int -> [(String, Integer)] -> Follower
+createFollower id mapList = F id (Map.fromList mapList)
+
 createLeaders:: Int -> [Leader] -> [Leader]
 createLeaders n leaders
 	| n > 0 = createLeaders (n-1) (leaders++[createLeader n danceMapList])
 	| otherwise = leaders
+
+createFollowers:: Int -> [Follower] -> [Follower]
+createFollowers m followers
+	| m > 0 = createFollowers (m-1) (followers++[createFollower m danceMapList])
+	| otherwise = followers
+
+getMap:: Follower -> (Map String Integer)
+getMap (F id map) = map
+
+
+canDance:: Follower -> Integer -> String -> Bool
+canDance f id dance
+	| Maybe.fromJust (Map.lookup dance (getMap f)) == -1 = True
+	| length (filter (==id) (Map.elems (getMap f))) > 0 && length (filter (==id) (Map.elems (getMap f))) < 2 = True
+	| otherwise = False
+
 
 lookupDanceCard:: String -> (Map String Integer) -> Integer
 lookupDanceCard key map = Maybe.fromJust (Map.lookup key map)
@@ -61,4 +81,7 @@ main = do
 	let n = read (argsList!!0)::Int
 	let m = read (argsList!!1)::Int
 	let leaders = createLeaders n []
+	let followers = createFollowers m []
+	blankLeaders <- replicateM n $ newMVar ()
+	blankFollowers <- replicateM m $ newMVar ()
 	putStrLn $ tellLeaders (reverse leaders)
