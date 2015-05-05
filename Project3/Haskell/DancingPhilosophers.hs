@@ -14,7 +14,7 @@ randomDelay max = do
 	n <- getStdRandom (randomR (1,max))
 	threadDelay (n*100000)
 
-data Leader = L Int (Map String Integer)
+data Leader = L Int (Map String Integer) deriving Show
 data LeaderPostOffice = LPO [(MVar Int, MVar String)]
 data FollowerPostOffice = FPO [(MVar Int, MVar Bool)]
 
@@ -27,15 +27,9 @@ createLeader:: Int -> [(String, Integer)] -> Leader
 createLeader id mapList = L id (Map.fromList mapList)
 
 createLeaders:: Int -> [Leader] -> [Leader]
-createLeaders n leaders = do
-	if n > 0
-		then
-			do
-				leaders <- leaders ++ [(createLeader n danceMapList)]
-				createLeaders (n-1) [leaders]
-	else
-		do 
-			return leaders
+createLeaders n leaders
+	| n > 0 = createLeaders (n-1) (leaders++[createLeader n danceMapList])
+	| otherwise = leaders
 
 lookupDanceCard:: String -> (Map String Integer) -> Integer
 lookupDanceCard key map = Maybe.fromJust (Map.lookup key map)
@@ -56,12 +50,15 @@ getFollowerForDance key map = do
 tellLeader:: Leader -> String
 tellLeader (L id map) = "Leader " ++ show id ++ "\n" ++ "Waltz      " ++ getFollowerForDance "Waltz" map ++ "\n" ++ "Tango      " ++ getFollowerForDance "Tango" map ++ "\n" ++ "Foxtrot    " ++ getFollowerForDance "Foxtrot" map ++ "\n" ++ "Quickstep  " ++ getFollowerForDance "Quickstep" map ++ "\n" ++ "Rumba      " ++ getFollowerForDance "Rumba" map ++ "\n" ++ "Samba      " ++ getFollowerForDance "Samba" map ++ "\n" ++ "Cha Cha    " ++ getFollowerForDance "Cha Cha" map ++ "\n" ++ "Jive       " ++ getFollowerForDance "Jive" map
 
+tellLeaders::[Leader] -> String
+tellLeaders [] = ""
+tellLeaders (x:xs) = tellLeader x ++ "\n\n" ++ tellLeaders xs
+
 
 main::IO ()
 main = do
 	argsList <- getArgs
 	let n = read (argsList!!0)::Int
 	let m = read (argsList!!1)::Int
-	chan <- newChan
-	let leader = createLeader 1 danceMapList
-	putStrLn $ tellLeader leader
+	let leaders = createLeaders n []
+	putStrLn $ tellLeaders (reverse leaders)
