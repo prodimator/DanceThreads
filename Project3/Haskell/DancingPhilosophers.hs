@@ -96,9 +96,11 @@ getFollowerForDance key map = do
 tellLeader:: Leader -> String
 tellLeader (L id map) = "Leader " ++ show id ++ "\n" ++ "Waltz      " ++ getFollowerForDance "Waltz" map ++ "\n" ++ "Tango      " ++ getFollowerForDance "Tango" map ++ "\n" ++ "Foxtrot    " ++ getFollowerForDance "Foxtrot" map ++ "\n" ++ "Quickstep  " ++ getFollowerForDance "Quickstep" map ++ "\n" ++ "Rumba      " ++ getFollowerForDance "Rumba" map ++ "\n" ++ "Samba      " ++ getFollowerForDance "Samba" map ++ "\n" ++ "Cha Cha    " ++ getFollowerForDance "Cha Cha" map ++ "\n" ++ "Jive       " ++ getFollowerForDance "Jive" map
 
-tellLeaders::[Leader] -> String
-tellLeaders [] = ""
-tellLeaders (x:xs) = tellLeader x ++ "\n\n" ++ tellLeaders xs
+tellLeaders::[Leader] -> Int -> Int -> String
+tellLeaders [] _ _ = ""
+tellLeaders (x:xs) numLeaders counter
+	| counter == numLeaders = tellLeader x ++ tellLeaders xs numLeaders (counter + 1)
+	| otherwise = tellLeader x ++ "\n\n" ++ tellLeaders xs numLeaders (counter + 1)
 
 {-|
 placeRequestInPostOffice request index postOffice
@@ -145,4 +147,4 @@ main = do
 	let followers = createFollowers m []
 	blankLeaders <- replicateM n $ newEmptyMVar
 	blankFollowers <- replicateM m $ newEmptyMVar
-	putStrLn $ tellLeaders (reverse leaders)
+	putStrLn $ tellLeaders (reverse leaders) n 1
